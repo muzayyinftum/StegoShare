@@ -1767,11 +1767,16 @@ def run_cli_extraction(args):
         )
 
     if args.share_indices:
-        selected_shares = args.share_indices
-        if len(selected_shares) != args.min_shares:
-            raise ValueError("--share-indices must contain exactly k values.")
-        if any(index < 0 or index >= args.shares for index in selected_shares):
+        candidate_shares = list(dict.fromkeys(args.share_indices))
+        if len(candidate_shares) != len(args.share_indices):
+            raise ValueError("--share-indices must not contain duplicate values.")
+        if len(candidate_shares) < args.min_shares:
+            raise ValueError("--share-indices must contain at least k values.")
+        if len(candidate_shares) > args.shares:
+            raise ValueError("--share-indices must not contain more than n values.")
+        if any(index < 0 or index >= args.shares for index in candidate_shares):
             raise ValueError("--share-indices values must be between 0 and n-1.")
+        selected_shares = random.sample(candidate_shares, args.min_shares)
     else:
         selected_shares = random.sample(range(args.shares), args.min_shares)
 
@@ -1877,7 +1882,7 @@ def build_arg_parser():
     extraction_parser.add_argument("--payload", required=True, help="Payload number Y.")
     extraction_parser.add_argument("--shares", required=True, type=int, help="Total shares n.")
     extraction_parser.add_argument("--min-shares", required=True, type=int, help="Minimum shares k.")
-    extraction_parser.add_argument("--share-indices", nargs="+", type=int, help="Optional exact share indices to use.")
+    extraction_parser.add_argument("--share-indices", nargs="+", type=int, help="Optional share indices (k to n values). If more than k are given, k are chosen randomly.")
     extraction_parser.add_argument("--output-dir", help="Optional extraction output directory.")
     extraction_parser.set_defaults(func=run_cli_extraction)
 
